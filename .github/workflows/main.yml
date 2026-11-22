@@ -35,6 +35,9 @@ jobs:
 
       - name: Apply fixes 3 (level meter on silence, Live Recording volume with speakers)
         run: python tools/altacast_fixes3.py trunk/AltaCast/src
+
+      - name: Apply fixes 4 (encoder comment - Basic Settings field and list column)
+        run: python tools/altacast_fixes4.py trunk/AltaCast/src
         
       - name: Patch sources for modern toolchain
         working-directory: trunk/AltaCast/src
