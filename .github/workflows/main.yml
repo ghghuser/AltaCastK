@@ -25,19 +25,19 @@ jobs:
       - uses: microsoft/setup-msbuild@v2
       
       - name: Apply patch 1 - Netladio (DJ name, charset, recording file name)
-        run: python tools/01_netladio.py trunk/AltaCast/src
+        run: python tools/alc_01_netladio.py trunk/AltaCast/src
 
       - name: Apply patch 2 - stability (fflush, recording recovery, encoder lock, multi-instance warning, config backup)
-        run: python tools/02_stability.py trunk/AltaCast/src
+        run: python tools/alc_02_stability.py trunk/AltaCast/src
 
       - name: Apply patch 3 - encoders (AAC and Ogg quality, AAC Plus, FLAC extension, missing DLL list)
-        run: python tools/03_encoders.py trunk/AltaCast/src
+        run: python tools/alc_03_encoders.py trunk/AltaCast/src
 
       - name: Apply patch 4 - UI (list columns, window resize, meters, Live Recording volume, comment)
-        run: python tools/04_ui.py trunk/AltaCast/src
+        run: python tools/alc_04_ui.py trunk/AltaCast/src
 
       - name: Apply patch 5 - TLS (HTTPS)
-        run: python tools/05_tls.py trunk/AltaCast/src
+        run: python tools/alc_05_tls.py trunk/AltaCast/src
 
       - name: Patch sources for modern toolchain
         working-directory: trunk/AltaCast/src
