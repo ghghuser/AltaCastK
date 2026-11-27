@@ -179,12 +179,12 @@ QMEM_LOAD = (
 
 
 QMEM_SAVE = """    /* %(m)s: also store the Quality of the type that is not selected */
-    if (g->gAACFlag) {
+    if (g->gAACFlag || g->gAACPFlag) {
         if (%(ogg)s) {
             strcpy(g->gOggQuality, LPCSTR(basicSettings->m_QualityOgg));
         }
     }
-    if (g->gLAMEFlag || g->gOggFlag || g->gFLACFlag) {
+    if (g->gLAMEFlag || g->gOggFlag || g->gFLACFlag || g->gAACPFlag) {
         if (%(aac)s) {
             strcpy(g->gAACQuality, LPCSTR(basicSettings->m_QualityAAC));
         }
@@ -311,7 +311,8 @@ def fix_aacp(t):
             + m.group(1) + "char_t\t\t\t*conf_file = conf_file_buf;\n"
             + m.group(1) + "{\n"
             + m.group(1) + "\tchar_t *confFilePart = NULL;\n"
-            + m.group(1) + "\tif(GetFullPathName(\"altacast_aacp.ini\", MAX_PATH, conf_file_buf, &confFilePart) == 0) {\n"
+            + m.group(1) + "\tDWORD confLen = GetFullPathName(\"altacast_aacp.ini\", MAX_PATH, conf_file_buf, &confFilePart);\n"
+            + m.group(1) + "\tif(confLen == 0 || confLen >= MAX_PATH) {\n"
             + m.group(1) + "\t\tstrcpy(conf_file_buf, \"altacast_aacp.ini\");\n"
             + m.group(1) + "\t}\n"
             + m.group(1) + "}\n"
@@ -423,7 +424,8 @@ static CString EncFindMissingImports(const CString &dllPath)
 		if (dos->e_magic == IMAGE_DOS_SIGNATURE && dos->e_lfanew > 0 &&
 			(DWORD) dos->e_lfanew + sizeof(IMAGE_NT_HEADERS32) < size) {
 			IMAGE_NT_HEADERS32 *nt = (IMAGE_NT_HEADERS32 *) (buf + dos->e_lfanew);
-			if (nt->Signature == IMAGE_NT_SIGNATURE && nt->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+			if (nt->Signature == IMAGE_NT_SIGNATURE && nt->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC &&
+				(size_t) ((BYTE *) (IMAGE_FIRST_SECTION(nt) + nt->FileHeader.NumberOfSections) - buf) <= size) {
 				DWORD impRva = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
 				DWORD impOff = (impRva != 0) ? EncRvaToOffset(nt, impRva) : 0;
 				int guard = 0;
@@ -554,19 +556,19 @@ void CBasicSettings::ShowEncoderUnavailable(const CString &selected)
 		else {
 			DWORD err = GetLastError();
 			if (err == ERROR_BAD_EXE_FORMAT) {
-				_snwprintf(body, 1899, L"\u7406\u7531: %S \u306f\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u304c\u300132bit\u7248\u3067\u306f\u306a\u3044\u305f\u3081\u8aad\u307f\u8fbc\u3081\u307e\u305b\u3093(\u30a8\u30e9\u30fc193)\u3002\n\n\u3053\u306e\u30a2\u30d7\u30ea\u306f32bit\u7248\u306a\u306e\u3067\u300132bit\u7248\u306e %S \u304c\u5fc5\u8981\u3067\u3059\u3002\n\n\u5834\u6240: %S", dll, dll, (LPCSTR) found);
+				_snwprintf(body, 1899, L"\u7406\u7531: %S \u306f\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u304c\u300132bit\u7248\u3067\u306f\u306a\u3044\u305f\u3081\u8aad\u307f\u8fbc\u3081\u307e\u305b\u3093(\u30a8\u30e9\u30fc193)\u3002\n\n\u3053\u306e\u30a2\u30d7\u30ea\u306f32bit\u7248\u306a\u306e\u3067\u300132bit\u7248\u306e %S \u304c\u5fc5\u8981\u3067\u3059\u3002\n\n\u5834\u6240: %s", dll, dll, (LPCWSTR) CStringW(found));
 			}
 			else if (err == ERROR_MOD_NOT_FOUND) {
 				CString missing = EncFindMissingImports(found);
 				if (missing.IsEmpty()) {
-					_snwprintf(body, 1899, L"\u7406\u7531: %S \u306f\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u304c\u3001\u8aad\u307f\u8fbc\u3081\u307e\u305b\u3093(\u30a8\u30e9\u30fc126)\u3002\n\n\u3053\u306eDLL\u304c\u5fc5\u8981\u3068\u3059\u308b\u5225\u306eDLL\u304c\u8db3\u308a\u306a\u3044\u53ef\u80fd\u6027\u304c\u3042\u308a\u307e\u3059\u3002\n\n\u8db3\u308a\u306a\u3044DLL: %s\n\n\u5834\u6240: %S", dll, L"(\u7279\u5b9a\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002VC\u30e9\u30f3\u30bf\u30a4\u30e0\u306a\u3069\u304c\u8db3\u308a\u306a\u3044\u5834\u5408\u304c\u3042\u308a\u307e\u3059)", (LPCSTR) found);
+					_snwprintf(body, 1899, L"\u7406\u7531: %S \u306f\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u304c\u3001\u8aad\u307f\u8fbc\u3081\u307e\u305b\u3093(\u30a8\u30e9\u30fc126)\u3002\n\n\u3053\u306eDLL\u304c\u5fc5\u8981\u3068\u3059\u308b\u5225\u306eDLL\u304c\u8db3\u308a\u306a\u3044\u53ef\u80fd\u6027\u304c\u3042\u308a\u307e\u3059\u3002\n\n\u8db3\u308a\u306a\u3044DLL: %s\n\n\u5834\u6240: %s", dll, L"(\u7279\u5b9a\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002VC\u30e9\u30f3\u30bf\u30a4\u30e0\u306a\u3069\u304c\u8db3\u308a\u306a\u3044\u5834\u5408\u304c\u3042\u308a\u307e\u3059)", (LPCWSTR) CStringW(found));
 				}
 				else {
-					_snwprintf(body, 1899, L"\u7406\u7531: %S \u306f\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u304c\u3001\u8aad\u307f\u8fbc\u3081\u307e\u305b\u3093(\u30a8\u30e9\u30fc126)\u3002\n\n\u3053\u306eDLL\u304c\u5fc5\u8981\u3068\u3059\u308b\u5225\u306eDLL\u304c\u8db3\u308a\u306a\u3044\u53ef\u80fd\u6027\u304c\u3042\u308a\u307e\u3059\u3002\n\n\u8db3\u308a\u306a\u3044DLL: %s\n\n\u5834\u6240: %S", dll, (LPCWSTR) CStringW((LPCSTR) missing), (LPCSTR) found);
+					_snwprintf(body, 1899, L"\u7406\u7531: %S \u306f\u898b\u3064\u304b\u308a\u307e\u3057\u305f\u304c\u3001\u8aad\u307f\u8fbc\u3081\u307e\u305b\u3093(\u30a8\u30e9\u30fc126)\u3002\n\n\u3053\u306eDLL\u304c\u5fc5\u8981\u3068\u3059\u308b\u5225\u306eDLL\u304c\u8db3\u308a\u306a\u3044\u53ef\u80fd\u6027\u304c\u3042\u308a\u307e\u3059\u3002\n\n\u8db3\u308a\u306a\u3044DLL: %s\n\n\u5834\u6240: %s", dll, (LPCWSTR) CStringW((LPCSTR) missing), (LPCWSTR) CStringW(found));
 				}
 			}
 			else {
-				_snwprintf(body, 1899, L"\u7406\u7531: %S \u306e\u8aad\u307f\u8fbc\u307f\u306b\u5931\u6557\u3057\u307e\u3057\u305f(\u30a8\u30e9\u30fc%lu)\u3002\n\n\u5834\u6240: %S", dll, (unsigned long) err, (LPCSTR) found);
+				_snwprintf(body, 1899, L"\u7406\u7531: %S \u306e\u8aad\u307f\u8fbc\u307f\u306b\u5931\u6557\u3057\u307e\u3057\u305f(\u30a8\u30e9\u30fc%lu)\u3002\n\n\u5834\u6240: %s", dll, (unsigned long) err, (LPCWSTR) CStringW(found));
 			}
 		}
 	}
@@ -654,11 +656,18 @@ def fix_avail_cpp(t):
 def fix_avail_config(t):
     if "SelectEncoderItem" in t:
         return t
-    return sub_once(
+    t = sub_once(
         t,
         r"basicSettings->m_EncoderTypeCtrl\.SelectString\(\s*0,\s*basicSettings->m_EncoderType\s*\);",
         "basicSettings->SelectEncoderItem( basicSettings->m_EncoderType );   " + C_OPEN + " " + MARK_AVAIL + " " + C_CLOSE,
         "Config.cpp encoder selection",
+    )
+    # DDX_CBString may match by prefix ("AAC" -> "AAC Plus"): select the exact item again
+    return sub_once(
+        t,
+        r"([ \t]*)basicSettings->UpdateData\(FALSE\);\n",
+        lambda m: m.group(0) + m.group(1) + "basicSettings->SelectEncoderItem( basicSettings->m_EncoderType );\n",
+        "Config.cpp basicSettings UpdateData",
     )
 
 
@@ -685,7 +694,8 @@ def fix_dropdown_width(t):
         t,
         r"([ \t]*)return TRUE;([ \t]*)// return TRUE unless you set the focus to a control",
         lambda m: (
-            m.group(1) + "{\t/* " + MARK_UI + ": widen the drop-down list so the (DLL...) mark is not cut off */\n"
+            m.group(1) + "m_QualityCtrl.LimitText(24);\t/* " + MARK_UI + ": gOggQuality / gAACQuality are char[25] */\n"
+            + m.group(1) + "{\t/* " + MARK_UI + ": widen the drop-down list so the (DLL...) mark is not cut off */\n"
             + m.group(1) + "\tCDC *encDC = m_EncoderTypeCtrl.GetDC();\n"
             + m.group(1) + "\tif (encDC != NULL) {\n"
             + m.group(1) + "\t\tCFont *encOldFont = encDC->SelectObject(m_EncoderTypeCtrl.GetFont());\n"
@@ -711,6 +721,19 @@ def fix_selendok_refresh(t):
     mark = TAG + ": refresh"
     if mark in t:
         return t
+    # take over what was typed first: UpdateData(FALSE) below writes every member back
+    t = sub_once(
+        t,
+        r"([ \t]*)//UpdateData\(TRUE\);\n",
+        lambda m: (
+            m.group(1) + "{\t" + C_OPEN + " " + mark + ": keep what was typed in the other fields " + C_CLOSE + "\n"
+            + m.group(1) + "\tCString prevType = m_EncoderType;\n"
+            + m.group(1) + "\tUpdateData(TRUE);\n"
+            + m.group(1) + "\tm_EncoderType = prevType;\n"
+            + m.group(1) + "}\n"
+        ),
+        "BasicSettings.cpp OnSelendokEncoderType start",
+    )
     return sub_once(
         t,
         r"(void CBasicSettings::OnSelendokEncoderType\s*\(\)\s*\{(?:(?!\nvoid CBasicSettings::).)*?)(\n[ \t]*)UpdateFields\(\);([ \t]*\n\s*\})",
