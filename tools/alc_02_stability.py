@@ -13,7 +13,7 @@ alc_02_stability.py - 安定性の修正 (AltaCast)
                       Channels をグレーアウト (変更するとクラッシュした)
     5. 多重起動警告   同じフォルダ (= 同じ .cfg) のインスタンスが起動中なら確認
   [設定ファイル]
-    6. バックアップ   変更前を .bak1 / .bak2 (2世代) に残す。一度 .new に書いてから置き換え
+    6. バックアップ   変更前を .bak1 / .bak2 (2世代) に残す。一度 .new に書いてから置き換え。書き込みに失敗したら置き換えない
 
   [設定ウィンドウ]
     7. ロックの追従   設定ウィンドウを開いたまま接続 / 切断しても、すぐグレーアウト / 解除 (0.5秒ごと)。
@@ -453,12 +453,29 @@ static void CommitConfigFile(const char *configFile, const char *tmpFile) {
 		}
 	}
 	if (!MoveFileExA(tmpFile, configFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED)) {
-		CopyFileA(tmpFile, configFile, FALSE);
-		remove(tmpFile);
+		/* keep the .new file when the copy fails too: it is the only copy of the new settings */
+		if (CopyFileA(tmpFile, configFile, FALSE)) {
+			remove(tmpFile);
+		}
 	}
 }
 
 """
+
+
+# a write error (disk full etc.) must not replace the good config with a truncated one
+CLOSE_AND_COMMIT = (
+    "\tint writeError = ferror(filep);\n"
+    "\tif (fclose(filep) != 0) {\n"
+    "\t\twriteError = 1;\n"
+    "\t}\n"
+    "\tif (writeError) {\n"
+    "\t\tremove(tmpFile);\n"
+    "\t\tLogMessage(g,LOG_ERROR, \"Cannot write config file %s\\n\", configFile);\n"
+    "\t\treturn 0;\n"
+    "\t}\n"
+    "\tCommitConfigFile(configFile, tmpFile);\n"
+)
 
 
 def fix_backup(t):
@@ -483,7 +500,7 @@ def fix_backup(t):
     t = sub_once(
         t,
         r"(\tfclose\(filep\);\n)(\n\treturn 1;\n\}\n\nvoid printConfigFileValues)",
-        lambda m: m.group(1) + "\tCommitConfigFile(configFile, tmpFile);\n" + m.group(2),
+        lambda m: CLOSE_AND_COMMIT + m.group(2),
         "libaltacast.cpp config fclose",
     )
     return t
