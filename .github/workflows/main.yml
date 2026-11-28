@@ -20,9 +20,9 @@ jobs:
       contents: read
       actions: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
-      - uses: microsoft/setup-msbuild@v2
+      - uses: microsoft/setup-msbuild@v3
       
       - name: Apply patch 1 - Netladio (DJ name, charset, recording file name)
         run: python tools/alc_01_netladio.py trunk/AltaCast/src
@@ -72,14 +72,6 @@ jobs:
           Edit-File $proj '<Link>' '<Link><ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>'
           Select-String -Path $proj -Pattern 'SafeExceptionHandlers' | Select-Object -First 10 | ForEach-Object { $_.Line }
 
-          # 5. 録音ファイル名を「[YYYYMMDD] タイトル_hhmmss」にする
-          $pat = 'sprintf\s*\(\s*outFilename\s*,\s*"%s_%s"\s*,\s*g->gServDesc\s*,\s*asctime\s*\(\s*newtime\s*\)\s*\)\s*;'
-          $rep = 'sprintf(outFilename, "[%04d%02d%02d] %s_%02d%02d%02d", newtime->tm_year + 1900, newtime->tm_mon + 1, newtime->tm_mday, g->gServName, newtime->tm_hour, newtime->tm_min, newtime->tm_sec);'
-          $targets = Get-ChildItem -File -Recurse -Path . | Where-Object { $_.Extension -in '.cpp','.c' } | Where-Object { Select-String -Path $_.FullName -Pattern 'outFilename' -Quiet }
-          foreach ($f in $targets) { Edit-File $f.FullName $pat $rep }
-          Write-Host '--- outFilename lines after patch ---'
-          foreach ($f in $targets) { Select-String -Path $f.FullName -Pattern 'outFilename' | ForEach-Object { $_.ToString() } }
-
       - name: Japanese UI patch (fonts and charset)
         working-directory: trunk/AltaCast/src
         shell: pwsh
@@ -118,7 +110,7 @@ jobs:
           Get-ChildItem trunk/external/lib/*.dll | Where-Object { $_.BaseName -notmatch '_d$' } | Copy-Item -Destination dist/
           Get-ChildItem dist | Select-Object Name, Length
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: altacast-standalone-bundle
           path: dist/
