@@ -39,6 +39,9 @@ jobs:
       - name: Apply patch 5 - TLS (HTTPS)
         run: python tools/alc_05_tls.py trunk/AltaCast/src
 
+      - name: Apply patch 6 - extra fixes
+        run: python tools/alc_06_fixes.py trunk/AltaCast/src
+
       - name: Patch sources for modern toolchain
         working-directory: trunk/AltaCast/src
         shell: pwsh
