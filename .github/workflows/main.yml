@@ -111,6 +111,12 @@ jobs:
           if (-not $exe) { throw 'altacastStandalone.exe not found' }
           Copy-Item $exe.FullName dist/
           Get-ChildItem trunk/external/lib/*.dll | Where-Object { $_.BaseName -notmatch '_d$' } | Copy-Item -Destination dist/
+          # extra_dll: newer DLLs (overwrite the old ones) and their license texts
+          if (Test-Path extra_dll) {
+            Get-ChildItem extra_dll/*.dll | Copy-Item -Destination dist/ -Force
+            New-Item -ItemType Directory -Force -Path dist/licenses | Out-Null
+            Get-ChildItem extra_dll/*.txt | Copy-Item -Destination dist/licenses/ -Force
+          }
           Get-ChildItem dist | Select-Object Name, Length
 
       - uses: actions/upload-artifact@v6
