@@ -224,7 +224,7 @@ def p_lib_h(t):
         t,
         r"\tchar_t\t\tgServGenre\[100\];\n",
         "\tchar_t\t\tgLadioDJ[256];\t\t/* Netladio DJ name (x-ladio-info) */\n"
-        "\tchar_t\t\tgLadioCharset[10];\t/* \"\", \"sjis\" or \"utf8\" */\n",
+        "\tchar_t\t\tgLadioCharset[256];\t/* \"\", \"sjis\" or \"utf8\" (as big as a config value) */\n",
         "after",
         "libaltacast.h gServGenre",
     )
